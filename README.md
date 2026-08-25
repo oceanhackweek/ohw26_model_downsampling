@@ -1,8 +1,6 @@
-# ohwyy_proj_template
+# ohw26_model_downsampling
 
-Template for starting Oceanhackweek project repos. 
-
-This repo is an example of how teams can structure their project repositories and format their project README.md file, but feel free to adapt as suits your needs.
+This project is exploring the CANESM2 model performance relative to observations made in the region around St. Mary's Bay (Digby County) in Eastern Canada.
 
 **Folder Structure**
 
