@@ -1,0 +1,4 @@
+default:
+  email: "EMAIL"
+  password: "PASSWORD"
+  app_token: "APP TOKEN"
