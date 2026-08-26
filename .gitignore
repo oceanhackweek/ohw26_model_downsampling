@@ -2,5 +2,6 @@
 .Rproj.user
 
 config.yml
+*/config.yml
 #   Ignore the 600MB file
 data/wpsu-7fer_d8fc_0e83_de71.csv
