@@ -13,27 +13,21 @@ can be shared here. Make sure to communicate so that you limit merge conflicts.
 need to share large datasets. Each team member can have a version of the dataset locally in the same folder to 
 preserve relative paths, but the dataset does not need to be added to git/GitHub (you can use `.gitignore`).
 
-You can start with a simple structure and as you progress you can refine it to contain more components. [Here](https://cookiecutter-data-science.drivendata.org/#directory-structure) is an example of a more elaborate structure for a data science project.
-
-## Project Name
-
-## One-line Description
-
 ## Collaborators
 
-| Name                | Role                |
-|---------------------|---------------------|
-| Participant 1       |  |
-| Participant 2       |  |
-| Participant 3       |  |
-
+| Name                | Role/tasks of interest | GH Handle |
+|---------------------|---------------------|-----------|
+| Danielle Dempsey     | ADCP vs FVCOM | @dempsey-CMAR |
+| Falzan Hague      | Gridding and EDA | @FaizanHaque |
+| Aaron Mau       | Historical obs. vs CMAR | @klankers |
+| Rachel Woodside       | Extract FVCOM w/ overlapping variables | @rachelwoodside |
 
 
 ## Planning
 
-* Initial idea: "short description"
-* Ideation Slide: Add link
-* Slack channel: ohw26_proj_name
+* Initial idea: "we have a model run, what does it look like against the various observations made there? If we were to rerun the model with fewer or more data points, what would happen?"
+* Ideation Slide: [Link](https://docs.google.com/presentation/d/1_KLEDpLLvtKpH3awDlZRAiOKuHzbEti4CWmhEykuCG8/edit?slide=id.g3f85357d4e2_7_0#slide=id.g3f85357d4e2_7_0)
+* Slack channel: ohw26_model_downsampling
 * Final presentation: Add link
 
 ## Background
