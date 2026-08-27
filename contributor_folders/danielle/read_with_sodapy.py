@@ -2,7 +2,7 @@ import sodapy as sdp
 import pandas as pd
 import yaml
 
-with open('config.yaml', 'r') as file:
+with open('contributor_folders/danielle/config.yml', 'r') as file:
     config = yaml.safe_load(file)
     
 county_resource_codes = {"Digby": "wpsu-7fer"}
