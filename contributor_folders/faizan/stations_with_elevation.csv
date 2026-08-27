@@ -1,0 +1,14 @@
+,county,waterbody,station,latitude,longitude,geocoded_column,geometry,elevation
+28,Digby,St. Marys Bay,1012,44.4071,-66.1605,POINT (-66.1605 44.4071),POINT (-66.1605 44.4071),-21
+29,Digby,St. Marys Bay,5007,44.5391,-65.958,POINT (-65.958 44.5391),POINT (-65.958 44.5391),-5
+30,Digby,St. Marys Bay,5008,44.5038,-65.9324,POINT (-65.9324 44.5038),POINT (-65.9324 44.5038),-6
+31,Digby,St. Marys Bay,Centreville 1,44.5328,-65.984,POINT (-65.984 44.5328),POINT (-65.984 44.5328),-8
+32,Digby,St. Marys Bay,Centreville,44.5362,-66.0017,POINT (-66.0017 44.5362),POINT (-66.0017 44.5362),-6
+33,Digby,St. Marys Bay,Church Point 1,44.324,-66.1357,POINT (-66.1357 44.324),POINT (-66.1357 44.324),-10
+34,Digby,St. Marys Bay,Church Point 2,44.3202,-66.1351,POINT (-66.1351 44.3202),POINT (-66.1351 44.3202),-9
+35,Digby,St. Marys Bay,Long Beach 1,44.3818,-66.1774,POINT (-66.1774 44.3818),POINT (-66.1774 44.3818),-39
+36,Digby,St. Marys Bay,Long Beach,44.4017,-66.1596,POINT (-66.1596 44.4017),POINT (-66.1596 44.4017),-33
+37,Digby,St. Marys Bay,Long Island 1,44.3501,-66.2243,POINT (-66.2243 44.3501),POINT (-66.2243 44.3501),-33
+38,Digby,St. Marys Bay,Long Island 2,44.3331,-66.2021,POINT (-66.2021 44.3331),POINT (-66.2021 44.3331),-34
+39,Digby,St. Marys Bay,Mid Bay,44.3868,-66.1442,POINT (-66.1442 44.3868),POINT (-66.1442 44.3868),-27
+40,Digby,St. Marys Bay,Sandy Cove,44.4857,-66.0596,POINT (-66.0596 44.4857),POINT (-66.0596 44.4857),-19
