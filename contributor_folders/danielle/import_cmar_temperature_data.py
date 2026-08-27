@@ -6,7 +6,6 @@
 # The raw temperature data is filtered for Quality Control Flags of
 # "Pass", "Not Evaluated", and "Suspect/Of Interest" (i.e., obervations flagged
 # as "Fail" are dropped)
-# The data is filtered for years 2017 - 2019
 
 ##############################################################
 # this is really slow - it took over an hour to run.
@@ -15,12 +14,14 @@
 # you may need to download in a few smaller chunks
 ##############################################################
 
+# if re-running this, change export file path to the cryohub data folder:
+# path <- "/home/jovyan/shared-public/ohw26/model_downsampling/"
+
 import sodapy as sdp
 import pandas as pd
 import yaml
 from pathlib import Path
 
-output_file = "data/cmar_temperature_data.csv"
 output_dir = Path("data")
 output_dir.mkdir(parents=True, exist_ok=True)
 Path(output_file).parent.mkdir(parents=True, exist_ok=True)
