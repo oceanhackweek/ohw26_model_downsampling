@@ -53,8 +53,7 @@ print(f"The {county} dataset has been downloaded ({len(df)} rows).")
 df["timestamp_utc"] = pd.to_datetime(df["timestamp_utc"])
 
 df = df.loc[
-    (df["qc_flag_temperature_degree_c"].isin(keep_flags)) & 
-    (df["timestamp_utc"].dt.year.between(2016, 2019)),
+    (df["qc_flag_temperature_degree_c"].isin(keep_flags)), 
     keep_cols,
 ].reset_index(drop=True)
 #df.to_csv(output_file, index=False)
