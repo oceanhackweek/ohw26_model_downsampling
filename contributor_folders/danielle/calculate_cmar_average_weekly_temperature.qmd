@@ -72,7 +72,6 @@ ggplotly(p, height = 500)
 
 ```
 
-
 # View Weekly Averages
 
 ```{r}
@@ -105,10 +104,7 @@ for(i in seq_along(stations)) {
 
 ```
 
-
-
 ```{r}
 # uncomment to export
 #fwrite(dat, paste0(path, "cmar_weekly_average_temperature.csv"))
 ```
-````
