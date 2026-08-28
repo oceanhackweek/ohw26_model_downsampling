@@ -7,3 +7,5 @@ data/wpsu-7fer_d8fc_0e83_de71.csv
 contributor_folders/danielle/config_template.yml
 data/ohw26_model_downsampling_data/stmb_fvcom_2017_05-06.nc
 contributor_folders/danielle/config_template.yml
+*.csv
+*.nc
