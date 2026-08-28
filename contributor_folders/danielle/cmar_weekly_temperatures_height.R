@@ -127,6 +127,6 @@ for (i in seq_along(stations)) {
   )
 }
 
-fwrite(dat, paste0(path, "cmar_weekly_average_temperature.csv"))
+fwrite(dat_wk, paste0(path, "cmar_weekly_average_temperature.csv"))
 
 
