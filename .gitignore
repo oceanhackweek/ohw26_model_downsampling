@@ -8,5 +8,6 @@ data/wpsu-7fer_d8fc_0e83_de71.csv
 #   Ignore the hundreds of files
 data/FRDR_dataset_734_download_182_202608251807/
 
-#   Ignore big file
+#   Ignore big file(s)
 data/even_more_data/bio_historical_coastal_moored_ctd_cioosatlantic_ca.csv
+data/stmb_fvcom_weekly_avg_temp.nc
