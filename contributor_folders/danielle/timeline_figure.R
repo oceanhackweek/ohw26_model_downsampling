@@ -87,8 +87,8 @@ dat_out <- dat_gap %>%
   bind_rows(
     data.frame(
     station = "FVCOM Model",
-    start_date = as_date("2016-01-01"),
-    end_date = as_date("2016-12-31"))
+    start_date = as_date("2016-12-31"),
+    end_date = as_date("2018-01-05"))
   )
 
 
@@ -122,3 +122,32 @@ ggsave(
   width = 16, height = 8, units = "cm", dpi = 600
 )
 
+
+dat_out %>% 
+  filter(station != "FVCOM Model") %>% 
+  ggplot() +
+  geom_segment(
+    aes(
+      x = start_date, xend = end_date, 
+      y = sensor_height_above_seafloor_m, 
+      yend = sensor_height_above_seafloor_m, 
+      col = station
+    ), linewidth = 2
+  ) +
+  scale_x_date(date_breaks = "2 years", date_labels = "%Y") +
+  scale_colour_manual(values = pal, drop = FALSE) +
+  facet_wrap(~station, ncol = 2) +
+  theme(
+    legend.position = "none",
+    axis.title.x = element_blank(),
+    panel.border = element_rect(colour = "gray20"),
+    panel.grid.minor = element_blank(),
+    strip.background = element_rect(colour = "gray20", fill = "gray40")
+  )
+
+ggsave(
+  here(
+    paste0("contributor_folders/danielle/figures/data_timeline_depths.png")),
+  device = "png",
+  width = 16, height = 18, units = "cm", dpi = 600
+)
