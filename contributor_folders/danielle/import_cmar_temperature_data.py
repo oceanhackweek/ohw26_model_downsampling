@@ -14,19 +14,15 @@
 # you may need to download in a few smaller chunks
 ##############################################################
 
-# if re-running this, change export file path to the cryohub data folder:
-# path <- "/home/jovyan/shared-public/ohw26/model_downsampling/"
-
 import sodapy as sdp
 import pandas as pd
 import yaml
 from pathlib import Path
 
-output_dir = Path("data")
+output_dir = Path("/home/jovyan/shared-public/ohw26/model_downsampling/")
 output_dir.mkdir(parents=True, exist_ok=True)
-Path(output_file).parent.mkdir(parents=True, exist_ok=True)
+output_path = output_dir / "cmar_temperature.csv"
 
-county = "Digby"
 resource_code = "wpsu-7fer"
 
 keep_cols = [
@@ -36,7 +32,7 @@ keep_cols = [
 ]
 keep_flags = ["Pass", "Not Evaluated", "Suspect/Of Interest"]
 
-with open("contributor_folders/danielle/config.yml", "r") as file:
+with open("config.yml", "r") as file:
     config = yaml.safe_load(file)
     
 with sdp.Socrata(
@@ -45,11 +41,10 @@ with sdp.Socrata(
     username=config["default"]["email"],
     password=config["default"]["password"],
 ) as client:
-     #df = pd.DataFrame(client.get_all(resource_code))
-     df = pd.DataFrame(client.get(resource_code, limit=1000))
+     df = pd.DataFrame(client.get_all(resource_code))
+     #df = pd.DataFrame(client.get(resource_code, limit=1000))
     
-df = pd.DataFrame(df)
-print(f"The {county} dataset has been downloaded ({len(df)} rows).")
+print(f"The dataset has been downloaded: ({len(df)} rows).")
 
 df["timestamp_utc"] = pd.to_datetime(df["timestamp_utc"])
 
@@ -57,14 +52,7 @@ df = df.loc[
     (df["qc_flag_temperature_degree_c"].isin(keep_flags)), 
     keep_cols,
 ].reset_index(drop=True)
-#df.to_csv(output_file, index=False)
-for station, group in df.groupby("station"):
-    safe_name = station.replace(" ", "_").replace("/", "-")
-    path = output_dir / f"cmar_temperature_{safe_name}.csv"
-    group.to_csv(path, index=False)
-    print(f"Wrote {len(group)} rows to {path}.")
-
-#print(f"Wrote {len(df)} rows to {output_file}.")
-
+df.to_csv(output_path, index=False)
+print(f"Wrote {len(df)} rows to {output_path}.")
 
 
