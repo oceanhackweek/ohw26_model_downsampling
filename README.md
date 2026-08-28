@@ -28,9 +28,13 @@ preserve relative paths, but the dataset does not need to be added to git/GitHub
 * Initial idea: "we have a model run, what does it look like against the various observations made there? If we were to rerun the model with fewer or more data points, what would happen?"
 * Ideation Slide: [Link](https://docs.google.com/presentation/d/1_KLEDpLLvtKpH3awDlZRAiOKuHzbEti4CWmhEykuCG8/edit?slide=id.g3f85357d4e2_7_0#slide=id.g3f85357d4e2_7_0)
 * Slack channel: ohw26_model_downsampling
-* Final presentation: Add link
+* Final presentation: [Link](https://docs.google.com/presentation/d/1AWgq7BNeF90E--sdQYpEGv6aMrgwxQDI6shM-3RuwSM/edit?usp=sharing)
 
 ## Background
+
+A circulation model was run for data from 2017-2018 in the Bay of Fundy. A nice aspect of the model is how high the resolution is. However, it also creates challenges when collaborating, as the data size can be a little overwhelming. When narrowing down a focus area, namely [St. Mary's Bay](https://en.wikipedia.org/wiki/St._Marys_Bay,_Nova_Scotia), it's clear that we want to trim out the majority of the model's geographic extent and simplify to a single variable: Temperature.
+
+Contrast this with the relatively sparse observations in the area.
 
 ## Goals
 
