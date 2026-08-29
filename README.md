@@ -34,11 +34,35 @@ preserve relative paths, but the dataset does not need to be added to git/GitHub
 
 A circulation model was run for data from 2017-2018 in the Bay of Fundy. A nice aspect of the model is how high the resolution is. However, it also creates challenges when collaborating, as the data size can be a little overwhelming. When narrowing down a focus area, namely [St. Mary's Bay](https://en.wikipedia.org/wiki/St._Marys_Bay,_Nova_Scotia), it's clear that we want to trim out the majority of the model's geographic extent and simplify to a single variable: Temperature.
 
-Contrast this with the relatively sparse observations in the area.
+Contrast this with the [relatively sparse observations in the area](https://explore.cioos.ca/?lat=44.354407178115565&lon=-66.14962611228577&zoom=9.234117507629128&lang=en). St. Mary's Bay and the Bay of Fundy are relatively undersampled when compared to the Gulf of St. Lawrence to the north. Of these observations, some of the most consistent are the [moorings set up by CMAR](https://cmar.ca/coastal-monitoring-program/). Some reasons could be related to:
+
+1. Some of the most intense tides in the world
+2. Active shipping lanes coming from St. John
+3. Seasonal trawling, which requires sensor movement
+
+This puts St. Mary's Bay at risk of being underrepresented in the regional model. After all, if there are no observations, how do we know if the model is getting it right?
 
 ## Goals
 
+Our initial goals were as follows:
+* Assess the performance of the model by comparison with in-situ observations
+* Refine the performance of the model by integrating in-situ observations
+  * Interpolation methods?
+  * Statistical versus dynamic downscaling?
+
+However, time constraints limited our work to just the first bullet point. Could we reduce the size of our model product down to something that is easily shared amongst one another, and could we then overlay the observations in such a way that they are comparable to our modeled output?
+
 ## Datasets
+
+* CMAR week-averaged mooring observations
+* FVCOM model run for the Bay of Fundy and St. Mary's Bay
+
+Other datasets were explored/considered from CIOOS, but they weren't collected by CMAR and therefore were less familiar to our group.
+* BIO/DFO CTDs (2009)
+* Fisheries and Oceans Canada Coastal rosette casts (2009)
+* Fisheries and Oceans Canada Moored timeseries (1994, 2013)
+* Historical DFO/MEDS buoy data (1977-1979)
+* Canadian Atlantic Shelf Temperature-Salinity (CASTS) (1912-2024)
 
 ## Workflow/Roadmap
 
