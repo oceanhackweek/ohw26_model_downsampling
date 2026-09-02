@@ -1,0 +1,366 @@
+---
+title: "Explore year-week-height averages"
+date: "`r Sys.Date()`"
+author: "Danielle Dempsey"
+format: 
+  html:
+    toc: true
+    toc-depth: 3
+    embed-resources: true
+echo: false
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+#| include: false
+
+library(data.table)
+library(dplyr)
+library(ggplot2)
+library(here)
+library(htmltools)
+library(lubridate)
+library(plotly)
+library(RColorBrewer)
+library(viridis)
+
+source(here("contributor_folders/danielle/functions/helpers.R"))
+
+theme_set(theme_light())
+
+# ensures the Plotly JS dependencies are loaded before being called in the loop
+htmltools::tagList(plot_ly(x = rnorm(10), type = "histogram"))
+
+
+path <- path <- "/home/jovyan/shared-public/ohw26/model_downsampling/"
+
+dat <- fread(
+  paste0(path, "cmar_weekly_average_temperature.csv"), data.table = FALSE
+) %>% 
+  mutate(week_date = make_date_from_iso_year_week(iso_year, iso_week)) 
+
+stations <- unique(dat$station)
+
+timeline_dat <- fread( paste0(path, "temperature_observations_timeline.csv"), data.table = FALSE)
+
+```
+
+This file visualizes the average and standard deviation of temperature calculated for each year, week, station, and sensor height.
+
+This is mainly to get a qualitative sense of how the average and standard deviation change over time and space, and to identify any obvious errors or outliers.
+
+Some figures are interactive, but some are not (depending on the size and complexity).
+
+A separate file will assess the inter-annual variability of the weekly averages to determine if the average weekly temperature can be used as a representative time series for comparison to the FVCOM model.
+
+# Timeline
+
+None of the stations have observed data for the period of the FCOM model run.
+
+```{r}
+#| warning: false
+
+pal_foo <- colorRampPalette(brewer.pal(8, "Dark2"))
+pal <- pal_foo(length(stations) + 1)
+
+p <- ggplot(timeline_dat) +
+  geom_segment(
+    aes(
+      x = start_date, xend = end_date, 
+      y = station, yend = station, col = station,
+      text = paste(
+        "station: ", station, "<br>",
+        "start_date: ", start_date, "<br>",
+        "end_date: ", end_date, "<br>",
+        "n weeks: ", ts_length_weeks
+      )
+    ), linewidth = 4
+  ) +
+  scale_y_discrete(limits = rev) +
+  scale_colour_manual(values = pal, drop = FALSE) +
+  theme(
+    legend.position = "none",
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    panel.border = element_rect(colour = "gray20"),
+    strip.background = element_rect(colour = "gray20", fill = "gray40"),
+    panel.spacing.x = unit(-1, "lines")
+  )
+
+ggplotly(p, tooltip = "text")
+```
+
+
+# Average Weekly Temperature
+
+The average temperature was calculated for each year, ISO week, station, and sensor height.
+
+```{=html}
+<style>
+.panel-tabset .tab-content {
+  min-height: 450px;
+}
+</style>
+```
+
+## Temperature Time Series
+
+::: {.panel-tabset}
+
+```{r}
+#| results: asis
+#| warning: false
+
+for(i in seq_along(stations)) {
+
+  station_i <- stations[i]
+
+  cat('\n###', station_i, '\n')
+  
+  dat_i <- dat %>% 
+    filter(station == station_i) %>% 
+    # so a discrete colour scale is used for sensor height
+    mutate(
+      sensor_height_above_seafloor_m =  convert_to_ordered_factor(sensor_height_above_seafloor_m)
+    )
+  
+  pal <- viridis(
+    length(unique(dat_i$sensor_height_above_seafloor_m)), option = "D", direction = -1
+  )
+  
+  p <- ggplot(
+    dat_i, aes(week_date, 
+               mean_temperature_degree_c, color = sensor_height_above_seafloor_m)) +
+    geom_point() +
+    scale_colour_manual("sensor height (m)", values = pal) +
+    scale_y_continuous("temperature_degree_c", limits = c(-2, 20)) +
+    scale_x_date(limits = c(as_date("2016-01-01"), as_date("2025-12-31")))
+  
+   print(htmltools::tagList(ggplotly(p)))
+}
+
+```
+:::
+
+## Average Temperature +/- Standard Deviation
+
+- Black points are the average temperature.
+- Ribbons show average temperature +/- standard deviation.
+- Note differences in x-axis, y-axis, and colour scales.
+
+::: {.panel-tabset}
+
+```{r}
+#| results: asis
+#| warning: false
+
+for(i in seq_along(stations)) {
+  
+  station_i <- stations[i]
+  
+  cat('\n###', station_i, '\n')
+  
+  dat_i <- dat %>% 
+    filter(station == station_i) %>% 
+    mutate(
+      sensor_height_above_seafloor_m =  convert_to_ordered_factor(sensor_height_above_seafloor_m)
+    )
+  
+  pal <- viridis(
+    length(unique(dat_i$sensor_height_above_seafloor_m)), option = "D", direction = -1
+  )
+  
+  p <- ggplot(dat_i) +
+    geom_ribbon(
+      aes(x = week_date,
+          ymin = mean_temperature_degree_c - sd_temperature_degree_c,
+          ymax = mean_temperature_degree_c + sd_temperature_degree_c,
+          color = sensor_height_above_seafloor_m,
+          fill = sensor_height_above_seafloor_m
+      ), alpha = 0.5
+    ) +
+    geom_point(aes(week_date, mean_temperature_degree_c), size = 0.25) +
+    scale_colour_manual("sensor height (m)", values = pal) +
+    scale_fill_manual("sensor height (m)", values = pal) +
+    facet_wrap(~sensor_height_above_seafloor_m, ncol = 1) 
+  
+  n_height <- length(unique(dat_i$sensor_height_above_seafloor_m))
+  
+  if(n_height == 1) {
+    h <- 2.5
+  } else h <- n_height * 2.25
+  
+  subchunkify(p, fig_width = 8, fig_height = h)
+}
+
+```
+::: 
+
+
+# Standard Deviation
+
+## Time Series
+
+How much variability is there within the observations used to calculate each weekly average value?
+
+::: {.panel-tabset}
+```{r}
+#| results: asis
+#| warning: false
+
+for(i in seq_along(stations)) {
+
+  station_i <- stations[i]
+
+  cat('\n###', station_i, '\n')
+  
+  dat_i <- dat %>% 
+    filter(station == station_i) %>% 
+    mutate(sensor_height_above_seafloor_m = convert_to_ordered_factor(sensor_height_above_seafloor_m))
+  
+  pal <- viridis(
+    length(unique(dat_i$sensor_height_above_seafloor_m)), option = "D", direction = -1
+  )
+  
+  p <- ggplot(
+    dat_i, aes(week_date, 
+               sd_temperature_degree_c, color = sensor_height_above_seafloor_m)) +
+    geom_point() +
+    scale_colour_manual("sensor height (m)", values = pal) +
+    scale_y_continuous("temperature_degree_c", limits = c(0, 2)) 
+ 
+   print(htmltools::tagList(ggplotly(p)))
+}
+```
+:::
+
+## Boxplots by Year & Sensor Height
+
+How does the standard deviation change over the observed years for each year-week-station-height group?
+
+::: {.panel-tabset}
+```{r}
+#| results: asis
+#| warning: false
+
+for(i in seq_along(stations)) {
+
+  station_i <- stations[i]
+
+  cat('\n###', station_i, '\n')
+  
+  dat_i <- dat %>% 
+    filter(station == station_i) %>% 
+    mutate(sensor_height_above_seafloor_m = convert_to_ordered_factor(sensor_height_above_seafloor_m))
+  
+  pal <- viridis(
+    length(unique(dat_i$sensor_height_above_seafloor_m)), option = "D", direction = -1
+  )
+  
+  p <- ggplot(
+    dat_i, 
+    aes(iso_year, sd_temperature_degree_c, fill = sensor_height_above_seafloor_m, 
+        group = iso_year)) +
+    geom_boxplot(outliers = TRUE) +
+    scale_y_continuous(limits = c(0, 2)) +
+    scale_x_continuous(breaks = seq(min(dat_i$iso_year), max(dat_i$iso_year))) +
+    scale_fill_manual("sensor height (m)", values = pal) + 
+    facet_wrap(~sensor_height_above_seafloor_m, scales = "free_x", ncol = 2) +
+    theme(legend.position = "none")
+  
+  n_height <- length(unique(dat_i$sensor_height_above_seafloor_m))
+  if(n_height <= 2) {
+    h <- 2
+  } else h <- n_height / 2 * 2.25
+  
+  subchunkify(p, fig_width = 8, fig_height = h)
+}
+
+```
+:::
+
+## Boxplots by Sensor Height
+
+How does the standard deviation change over the sensor height for each year-week-station-height group?
+
+::: {.panel-tabset}
+```{r}
+#| results: asis
+#| warning: false
+
+for(i in seq_along(stations)) {
+
+  station_i <- stations[i]
+
+  cat('\n###', station_i, '\n')
+  
+  dat_i <- dat %>% 
+    filter(station == station_i) %>% 
+    mutate(
+      sensor_height_above_seafloor_m =  convert_to_ordered_factor(sensor_height_above_seafloor_m)
+    )
+  
+  pal <- viridis(
+    length(unique(dat_i$sensor_height_above_seafloor_m)), option = "D", direction = -1
+  )
+  
+  p <- ggplot(
+    dat_i, aes(sensor_height_above_seafloor_m, sd_temperature_degree_c, fill = sensor_height_above_seafloor_m)) +
+    geom_boxplot(outliers = TRUE) +
+    scale_fill_manual("sensor height (m)", values = pal) +
+    scale_y_continuous(limits = c(0, 2)) +
+    theme(legend.position = "none")
+  
+  print(htmltools::tagList(ggplotly(p)))
+}
+
+```
+:::
+
+
+# Numer of Observations
+
+How many observations were included in each average temperature value?
+
+- Could consider removing the first and last week of each deployment, since fewer observations are recorded. This likely does not impact the average. 
+  - Review the average temperature time series to see.
+- In 2024, one sensor at Long Island 1 and one sensor at Sandy Cove were each set to record every 1 minute, which is where there are ~10,000 observations each week.
+
+::: {.panel-tabset}
+```{r}
+#| results: asis
+#| warning: false
+
+for(i in seq_along(stations)) {
+
+  station_i <- stations[i]
+
+  cat('\n###', station_i, '\n')
+  
+  dat_i <- dat %>% 
+    filter(station == station_i) %>% 
+    mutate(
+      sensor_height_above_seafloor_m =  convert_to_ordered_factor(sensor_height_above_seafloor_m)
+    )
+  
+  pal <- viridis(
+    length(unique(dat_i$sensor_height_above_seafloor_m)), option = "D", direction = -1
+  )
+  
+  p <- ggplot(
+    dat_i, aes(week_date, n, col = sensor_height_above_seafloor_m)) +
+    geom_point(size = 0.5) +
+    scale_colour_manual("sensor height (m)", values = pal) 
+  
+  print(htmltools::tagList(ggplotly(p)))
+}
+
+```
+:::
+
+# Potential code improvements
+
+  - `map` over stations instead of loop to reduce repetition.
+  - divide figures by station instead of figure type.
+
