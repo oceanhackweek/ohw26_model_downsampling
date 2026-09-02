@@ -98,6 +98,9 @@ dat_out <- dat_gap %>%
     end_date = as_date("2018-01-05"))
   )
 
+# export so can include the figure in quarto docs without re-calculating the above
+fwrite(dat_out, paste0(path, "temperature_observations_timeline.csv"))
+
 # generate figure --------------------------------------------------------
 
 theme_set(theme_light()) # use light background for figures
