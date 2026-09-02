@@ -18,7 +18,10 @@ library(lubridate)
 library(purrr)
 library(viridis)
 
+source(here("contributor_folders/danielle/functions/helpers.R"))
+
 path <- "/home/jovyan/shared-public/ohw26/model_downsampling/"
+
 
 # sea level at low tide for each CMAR station ---------------------------------------------------
 
@@ -103,18 +106,13 @@ for (i in seq_along(stations)) {
   station_i <- stations[i]
   
   dat_i <- dat %>% 
-    filter(station == station_i) 
-  
-  # break pipe to convert height to ordered factor based on the heights in dat_i
-  # this is so a discrete colour scale is used for sensor height
-  dat_i <- dat_i %>% 
+    filter(station == station_i) %>% 
+    # this is so a discrete colour scale is used for sensor height
     mutate(
-      sensor_height_above_seafloor_m = ordered(
-        sensor_height_above_seafloor_m, 
-        levels = sort(unique(dat_i$sensor_height_above_seafloor_m), decreasing = TRUE)
-      )
+      sensor_height_above_seafloor_m = 
+        convert_to_ordered_factor(sensor_height_above_seafloor_m)
     )
-  
+    
   pal <- viridis(
     length(unique(dat_i$sensor_height_above_seafloor_m)), option = "D", direction = -1
   )
@@ -131,19 +129,19 @@ for (i in seq_along(stations)) {
   
   print(p)
   
-  n_year <- length(unique(dat_i$iso_year))
-  
-  if(n_year == 1) {
-    h <- 5
-  } else h <- n_year * 4.75
-  
-  ggsave(
-    here(
-      paste0("contributor_folders/danielle/figures/",
-             gsub(" ", "_", tolower(station_i)),
-             "_cmar_weekly_average_temp.png")),
-    device = "png",
-    width = 16, height = h, units = "cm", dpi = 600
-  )
+  # n_year <- length(unique(dat_i$iso_year))
+  # 
+  # if(n_year == 1) {
+  #   h <- 5
+  # } else h <- n_year * 4.75
+  # 
+  # ggsave(
+  #   here(
+  #     paste0("contributor_folders/danielle/figures/",
+  #            gsub(" ", "_", tolower(station_i)),
+  #            "_cmar_weekly_average_temp.png")),
+  #   device = "png",
+  #   width = 16, height = h, units = "cm", dpi = 600
+  # )
 }
 

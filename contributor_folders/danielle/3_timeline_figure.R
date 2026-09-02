@@ -6,8 +6,11 @@
 library(dplyr)
 library(data.table)
 library(ggplot2)
+library(here)
 library(lubridate)
 library(RColorBrewer)
+
+source(here("contributor_folders/danielle/functions/helpers.R"))
 
 # read in weekly average temperature data ------------------------------------------------------------
 
@@ -22,12 +25,9 @@ dat_raw <- fread(
 dat <- dat_raw %>%
   select(station, sensor_height_above_seafloor_m, iso_year, iso_week) %>% 
   # turn the iso week and years values into a proper Date object
-  # modified from code suggested by Claude
   mutate(
-    anchor = make_date(iso_year, 1, 4),
-    week_date = anchor - days(wday(anchor, week_start = 1) - 1) + weeks(iso_week - 1)
+    week_date = make_date_from_iso_year_week(iso_year, iso_week)
   ) %>% 
-  select(-anchor) %>% 
   group_by(station, sensor_height_above_seafloor_m) %>%
   # preliminary values - these get updated below if needed:
   mutate(
