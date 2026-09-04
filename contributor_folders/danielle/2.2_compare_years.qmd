@@ -1,5 +1,5 @@
 ---
-title: "Compare Average Weekly Temperatures between Years"
+title: "2.2: Compare Weekly Temperatures between Years"
 date: "`r Sys.Date()`"
 author: "Danielle Dempsey"
 format: 
@@ -38,7 +38,7 @@ htmltools::tagList(plot_ly(x = rnorm(10), type = "histogram"))
 path <- path <- "/home/jovyan/shared-public/ohw26/model_downsampling/"
 
 dat <- fread(
-  paste0(path, "cmar_weekly_average_temperature.csv"), data.table = FALSE
+  paste0(path, "cmar_average_temperature_year_week.csv"), data.table = FALSE
 )
 
 dat_summary <- dat %>% 
