@@ -1,5 +1,5 @@
 ---
-title: "Explore year-week-height averages"
+title: "2.1: Explore `year-week` Averages"
 date: "`r Sys.Date()`"
 author: "Danielle Dempsey"
 format: 
@@ -33,10 +33,10 @@ theme_set(theme_light())
 htmltools::tagList(plot_ly(x = rnorm(10), type = "histogram"))
 
 
-path <- path <- "/home/jovyan/shared-public/ohw26/model_downsampling/"
+path <- "/home/jovyan/shared-public/ohw26/model_downsampling/"
 
 dat <- fread(
-  paste0(path, "cmar_weekly_average_temperature.csv"), data.table = FALSE
+  paste0(path, "cmar_average_temperature_year_week.csv"), data.table = FALSE
 ) %>% 
   mutate(week_date = make_date_from_iso_year_week(iso_year, iso_week)) 
 
@@ -45,6 +45,11 @@ stations <- unique(dat$station)
 timeline_dat <- fread( paste0(path, "temperature_observations_timeline.csv"), data.table = FALSE)
 
 ```
+
+**This is for averages calculated for each year and ISO week. Additional averaging is required to generate a "representative year".**
+
+  - Advantage: we can calculate inter-annual variability of the weekly averages. This gives us bounds for assessing how well the model weekly averages match the "representative year".
+  - Disadvantage: most stations only have one year of data, so the standard deviation cannot be calculated.
 
 This file visualizes the average and standard deviation of temperature calculated for each year, week, station, and sensor height.
 
@@ -145,7 +150,7 @@ for(i in seq_along(stations)) {
 
 ## Average Temperature +/- Standard Deviation
 
-- Black points are the average temperature.
+- Points are the average temperature.
 - Ribbons show average temperature +/- standard deviation.
 - Note differences in x-axis, y-axis, and colour scales.
 
@@ -163,24 +168,23 @@ for(i in seq_along(stations)) {
   
   dat_i <- dat %>% 
     filter(station == station_i) %>% 
-    mutate(
-      sensor_height_above_seafloor_m =  convert_to_ordered_factor(sensor_height_above_seafloor_m)
-    )
+    mutate(sensor_height_above_seafloor_m =  convert_to_ordered_factor(sensor_height_above_seafloor_m))
   
   pal <- viridis(
     length(unique(dat_i$sensor_height_above_seafloor_m)), option = "D", direction = -1
   )
   
-  p <- ggplot(dat_i) +
+  p <- ggplot(
+    dat_i, 
+    aes(week_date, mean_temperature_degree_c, col = sensor_height_above_seafloor_m)
+  ) +
     geom_ribbon(
-      aes(x = week_date,
-          ymin = mean_temperature_degree_c - sd_temperature_degree_c,
+      aes(ymin = mean_temperature_degree_c - sd_temperature_degree_c,
           ymax = mean_temperature_degree_c + sd_temperature_degree_c,
-          color = sensor_height_above_seafloor_m,
           fill = sensor_height_above_seafloor_m
-      ), alpha = 0.5
+      ), alpha = 0.4
     ) +
-    geom_point(aes(week_date, mean_temperature_degree_c), size = 0.25) +
+    geom_point() +
     scale_colour_manual("sensor height (m)", values = pal) +
     scale_fill_manual("sensor height (m)", values = pal) +
     facet_wrap(~sensor_height_above_seafloor_m, ncol = 1) 
