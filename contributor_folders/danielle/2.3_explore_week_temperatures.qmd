@@ -1,0 +1,335 @@
+---
+title: "2.3: Explore `week` Averages"
+date: "`r Sys.Date()`"
+author: "Danielle Dempsey"
+format: 
+  html:
+    toc: true
+    toc-depth: 3
+    embed-resources: true
+echo: false
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+#| include: false
+
+library(data.table)
+library(dplyr)
+library(DT)
+library(ggplot2)
+library(here)
+library(htmltools)
+library(lubridate)
+library(plotly)
+library(RColorBrewer)
+library(viridis)
+
+source(here("contributor_folders/danielle/functions/helpers.R"))
+
+theme_set(theme_light())
+
+# ensures the Plotly JS dependencies are loaded before being called in the loop
+htmltools::tagList(plot_ly(x = rnorm(10), type = "histogram"))
+
+
+path <- "/home/jovyan/shared-public/ohw26/model_downsampling/"
+
+dat <- fread(
+  paste0(path, "cmar_average_temperature_week.csv"), data.table = FALSE
+) 
+stations <- unique(dat$station)
+
+timeline_dat <- fread( paste0(path, "temperature_observations_timeline.csv"), data.table = FALSE)
+
+```
+
+**This is for weekly averages calculated directly from the raw data. Year is not considered.**
+
+  - Advantage: we can calculate standard deviation for stations with only one year of data.
+  - Disadvantage: the standard deviation may be more related to intra-week variability (e.g., day-night) than inter-annual variability. We are interested in inter-annual variability of the weekly averages to assess the acceptable ranges of outputs from the model.
+
+This file visualizes the average and standard deviation of temperature calculated for each week, station, and sensor height.
+
+This is mainly to get a qualitative sense of how the average and standard deviation change over time and space, and to identify any obvious errors or outliers.
+
+Some figures are interactive, but some are not (depending on the size and complexity).
+
+
+# Timeline
+
+None of the stations have observed data for the period of the FCOM model run.
+
+```{r}
+#| warning: false
+
+pal_foo <- colorRampPalette(brewer.pal(8, "Dark2"))
+pal <- pal_foo(length(stations) + 1)
+
+p <- ggplot(timeline_dat) +
+  geom_segment(
+    aes(
+      x = start_date, xend = end_date, 
+      y = station, yend = station, col = station,
+      text = paste(
+        "station: ", station, "<br>",
+        "start_date: ", start_date, "<br>",
+        "end_date: ", end_date, "<br>",
+        "n weeks: ", ts_length_weeks
+      )
+    ), linewidth = 4
+  ) +
+  scale_y_discrete(limits = rev) +
+  scale_colour_manual(values = pal, drop = FALSE) +
+  theme(
+    legend.position = "none",
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    panel.border = element_rect(colour = "gray20"),
+    strip.background = element_rect(colour = "gray20", fill = "gray40"),
+    panel.spacing.x = unit(-1, "lines")
+  )
+
+ggplotly(p, tooltip = "text")
+```
+
+
+# Average Weekly Temperature
+
+- The average temperature was calculated for each ISO week, station, and sensor height.
+- Ribbon shows +/- standard deviation.
+
+```{=html}
+<style>
+.panel-tabset .tab-content {
+  min-height: 450px;
+}
+</style>
+```
+
+::: {.panel-tabset}
+
+```{r}
+#| results: asis
+#| warning: false
+
+for(i in seq_along(stations)) {
+  
+  station_i <- stations[i]
+  
+  cat('\n###', station_i, '\n')
+  
+  dat_i <- dat %>% 
+    filter(station == station_i) %>% 
+    mutate(sensor_height_above_seafloor_m = convert_to_ordered_factor(sensor_height_above_seafloor_m))
+  
+  pal <- viridis(
+    length(unique(dat_i$sensor_height_above_seafloor_m)), option = "D", direction = -1
+  )
+  
+  p <- ggplot(
+    dat_i, 
+    aes(iso_week, mean_temperature_degree_c, col = sensor_height_above_seafloor_m)
+  ) +
+    geom_ribbon(
+      aes(ymin = mean_temperature_degree_c - sd_temperature_degree_c,
+          ymax = mean_temperature_degree_c + sd_temperature_degree_c,
+          fill = sensor_height_above_seafloor_m
+      ), alpha = 0.4
+    ) +
+    geom_point() +
+    scale_x_continuous(limits = c(1, 53)) +
+    scale_colour_manual("sensor height (m)", values = pal) +
+    scale_fill_manual("sensor height (m)", values = pal) +
+    facet_wrap(~sensor_height_above_seafloor_m, ncol = 2) 
+  
+  n_height <- length(unique(dat_i$sensor_height_above_seafloor_m))
+  n_row <- ceiling(n_height / 2)
+  
+  if(n_row == 1) {
+    h <- 2
+  } else h <- n_row * 2
+  
+  
+  subchunkify(p, fig_width = 8, fig_height = h)
+}
+
+```
+::: 
+
+
+# Standard Deviation
+
+## By Station
+
+::: panel-tabset
+
+### Boxplot
+```{r}
+dat_sd <- dat %>% 
+  filter(!is.na(sd_temperature_degree_c)) %>% 
+  mutate(station = ordered(station, levels = sort(stations, decreasing = TRUE)))
+
+pal <- ggplot_default_colors <- function(n) {
+  hues = seq(15, 375, length = n + 1)
+  hcl(h = hues[1:n], c = 100, l = 65)
+}
+
+p <- ggplot(dat_sd, aes(station, sd_temperature_degree_c, fill = station)) + 
+  geom_boxplot(outliers = TRUE) +
+  coord_flip() +
+  scale_fill_manual(values = pal(13)) +
+ # scale_y_discrete(limits = rev) +
+  theme(legend.position = "none")
+
+ggplotly(p)
+```
+
+### Distribution
+```{r}
+
+p <- ggplot(dat_sd, aes(sd_temperature_degree_c, fill = station)) +
+   geom_histogram(binwidth = 0.2, color = "grey80", linewidth = 0.25)
+
+ggplotly(p)
+
+```
+
+### Table
+
+```{r}
+dat_sd %>% 
+  summarise(
+    min_sd = round(min(sd_temperature_degree_c), digits = 3),
+    med_sd = round(median(sd_temperature_degree_c), digits = 3),
+    mean_sd = round(mean(sd_temperature_degree_c), digits = 3),
+    max_sd = round(max(sd_temperature_degree_c), digits = 3),
+    .by = station
+  ) %>% 
+  datatable(
+    rownames = FALSE, 
+    options = list(
+      dom = 'Bft',
+      paging = FALSE,
+      searching = TRUE,
+      pageLength = 500,
+      scrollY = "500px",
+      scrollX = "500px",
+      columnDefs = list(list(className = 'dt-center', targets = "_all")),
+      buttons = 'copy'
+    ))
+
+```
+
+:::
+
+
+## Time Series
+
+::: {.panel-tabset}
+```{r}
+#| results: asis
+#| warning: false
+
+for(i in seq_along(stations)) {
+
+  station_i <- stations[i]
+
+  cat('\n###', station_i, '\n')
+  
+  dat_i <- dat %>% 
+    filter(station == station_i) %>% 
+    mutate(sensor_height_above_seafloor_m = convert_to_ordered_factor(sensor_height_above_seafloor_m))
+  
+  pal <- viridis(
+    length(unique(dat_i$sensor_height_above_seafloor_m)), option = "D", direction = -1
+  )
+  
+  p <- ggplot(
+    dat_i, aes(iso_week, 
+               sd_temperature_degree_c, color = sensor_height_above_seafloor_m)) +
+    geom_point() +
+    scale_colour_manual("sensor height (m)", values = pal) +
+    scale_y_continuous("temperature_degree_c", limits = c(0, 2)) 
+ 
+   print(htmltools::tagList(ggplotly(p)))
+}
+```
+:::
+
+
+## Boxplots by Sensor Height
+
+::: {.panel-tabset}
+```{r}
+#| results: asis
+#| warning: false
+
+for(i in seq_along(stations)) {
+
+  station_i <- stations[i]
+
+  cat('\n###', station_i, '\n')
+  
+  dat_i <- dat %>% 
+    filter(station == station_i) %>% 
+    mutate(
+      sensor_height_above_seafloor_m =  convert_to_ordered_factor(sensor_height_above_seafloor_m)
+    )
+  
+  pal <- viridis(
+    length(unique(dat_i$sensor_height_above_seafloor_m)), option = "D", direction = -1
+  )
+  
+  p <- ggplot(
+    dat_i, aes(sensor_height_above_seafloor_m, sd_temperature_degree_c, fill = sensor_height_above_seafloor_m)) +
+    geom_boxplot(outliers = TRUE) +
+    scale_fill_manual("sensor height (m)", values = pal) +
+    scale_y_continuous(limits = c(0, 2)) +
+    theme(legend.position = "none")
+  
+  print(htmltools::tagList(ggplotly(p)))
+}
+
+```
+:::
+
+
+# Numer of Observations
+
+How many observations were included in each average temperature value?
+
+::: {.panel-tabset}
+```{r}
+#| results: asis
+#| warning: false
+
+for(i in seq_along(stations)) {
+
+  station_i <- stations[i]
+
+  cat('\n###', station_i, '\n')
+  
+  dat_i <- dat %>% 
+    filter(station == station_i) %>% 
+    mutate(
+      sensor_height_above_seafloor_m =  convert_to_ordered_factor(sensor_height_above_seafloor_m)
+    )
+  
+  pal <- viridis(
+    length(unique(dat_i$sensor_height_above_seafloor_m)), option = "D", direction = -1
+  )
+  
+  p <- ggplot(
+    dat_i, aes(iso_week, n, col = sensor_height_above_seafloor_m)) +
+    geom_point(size = 0.5) +
+    scale_colour_manual("sensor height (m)", values = pal) 
+  
+  print(htmltools::tagList(ggplotly(p)))
+}
+
+```
+:::
+
+
