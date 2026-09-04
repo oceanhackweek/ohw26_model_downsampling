@@ -98,4 +98,33 @@ subchunkify <- function(g, fig_height = 7, fig_width = 5, fig_i = NULL) {
   cat(knitr::knit(text = knitr::knit_expand(text = sub_chunk), quiet = TRUE))
 }
 
+# add multiple layers to leaflet map
+## map_dat: list where each element is one layer to add
+## map_pal: colour palette for layers. Can be a function
+## popup: column of map_dat to use as popup or label
+
+add_map_layers <- function(m, map_dat, map_pal = NULL, popup = NULL, size = 5) {
+  
+  names(map_dat) %>%
+    purrr::walk(function(x) {
+      m <<- m %>%
+        addCircleMarkers(
+          data = map_dat[[x]],
+          group = x,
+          
+          fillColor = map_pal,
+          popup = popup,
+          label = ~station,
+          lng = ~longitude, lat = ~latitude,
+          
+        #  weight = 1,
+          color = map_pal,
+          fillOpacity = 1,
+          radius = size
+        )
+    })
+  
+  m
+}
+
 
