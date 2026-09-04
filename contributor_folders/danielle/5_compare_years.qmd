@@ -1,0 +1,373 @@
+---
+title: "Compare Average Weekly Temperatures between Years"
+date: "`r Sys.Date()`"
+author: "Danielle Dempsey"
+format: 
+  html:
+    toc: true
+    toc-depth: 3
+    embed-resources: true
+echo: false
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+#| include: false
+
+library(data.table)
+library(dplyr)
+library(DT)
+library(ggplot2)
+library(here)
+library(htmltools)
+library(leaflet)
+library(lubridate)
+library(plotly)
+library(RColorBrewer)
+library(viridis)
+
+source(here("contributor_folders/danielle/functions/helpers.R"))
+
+theme_set(theme_light())
+
+# ensures the Plotly JS dependencies are loaded before being called in the loop
+htmltools::tagList(plot_ly(x = rnorm(10), type = "histogram"))
+
+
+path <- path <- "/home/jovyan/shared-public/ohw26/model_downsampling/"
+
+dat <- fread(
+  paste0(path, "cmar_weekly_average_temperature.csv"), data.table = FALSE
+)
+
+dat_summary <- dat %>% 
+  summarise(
+    wk_mean_temperature_degree_c = mean(mean_temperature_degree_c),
+    wk_sd_temperature_degree_c = sd(mean_temperature_degree_c),
+    n = n(),
+    .by = c(iso_week, station, sensor_height_above_seafloor_m)
+  )
+
+# save this file for use in other scripts. "rep" stands for "representative"
+# fwrite(dat_summary, paste0(path, "cmar_rep_weekly_average_temperatures.csv"))
+
+stations <- unique(dat$station)
+```
+
+
+```{=html}
+<style>
+.panel-tabset .tab-content {
+  min-height: 450px;
+}
+</style>
+```
+
+
+# Weekly Average Temperature
+
+- By year, station, and height.
+
+::: {.panel-tabset}
+
+```{r}
+#| results: asis
+#| warning: false
+
+for(i in seq_along(stations)) {
+
+  station_i <- stations[i]
+
+  cat('\n###', station_i, '\n')
+  
+  dat_i <- dat %>% 
+    filter(station == station_i) %>%
+    mutate(
+      sensor_height_above_seafloor_m = convert_to_ordered_factor(sensor_height_above_seafloor_m),
+      year = factor(iso_year)
+    )
+  
+  pal <- brewer.pal(length(unique(dat_i$year)), "Dark2")
+  
+  p <- ggplot(dat_i, aes(iso_week, mean_temperature_degree_c, col = year)) +
+    geom_point() + 
+    scale_color_manual(values = pal) +
+    scale_x_continuous(limits = c(1, 53)) +
+    facet_wrap(~sensor_height_above_seafloor_m, ncol = 2)
+  
+  n_height <- length(unique(dat_i$sensor_height_above_seafloor_m))
+  n_row <- ceiling(n_height / 2)
+  
+  if(n_row == 1) {
+    h <- 2
+  } else h <- n_row * 2
+  
+  subchunkify(p, fig_width = 8, fig_height = h)
+}
+
+```
+:::
+
+# Representative Average
+
+- This is the average of the weekly average temperatues over all observed years.
+- Ribbons show average temperature +/- standard deviation.
+- No ribbon around a point indicates that there is only one year of data for that ISO week.
+- Gaps indicate that data was not recorded in that ISO week for any years.
+
+::: {.panel-tabset}
+
+```{r}
+#| results: asis
+#| warning: false
+#| message: false
+
+for(i in seq_along(stations)) {
+  
+  station_i <- stations[i]
+  
+  cat('\n###', station_i, '\n')
+  
+  dat_i <- dat_summary %>% 
+    filter(station == station_i) %>%
+    mutate(
+      sensor_height_above_seafloor_m = convert_to_ordered_factor(sensor_height_above_seafloor_m)
+    )
+  
+  pal <- viridis(
+    length(unique(dat_i$sensor_height_above_seafloor_m)), option = "D", direction = -1
+  )
+  
+  p <- ggplot(dat_i) +
+      geom_ribbon(
+      aes(x = iso_week,
+          ymin = wk_mean_temperature_degree_c - wk_sd_temperature_degree_c,
+          ymax = wk_mean_temperature_degree_c + wk_sd_temperature_degree_c,
+          color = sensor_height_above_seafloor_m,
+          fill = sensor_height_above_seafloor_m
+      ), alpha = 0.4, na.rm = TRUE
+    ) +
+    geom_point(aes(iso_week, 
+                   wk_mean_temperature_degree_c, 
+                   col = sensor_height_above_seafloor_m)) +
+    scale_colour_manual("sensor height (m)", values = pal) +
+    scale_fill_manual("sensor height (m)", values = pal) +
+    scale_x_continuous(limits = c(1, 53)) +
+    facet_wrap(~sensor_height_above_seafloor_m, ncol = 2) 
+  
+  n_height <- length(unique(dat_i$sensor_height_above_seafloor_m))
+  n_row <- ceiling(n_height / 2)
+  
+  if(n_row == 1) {
+    h <- 2
+  } else h <- n_row * 2
+  
+  subchunkify(p, fig_width = 8, fig_height = h)
+}
+
+```
+:::
+
+# Standard Deviation 
+
+- Only includes stations with more than one year of data for at least one week. (The standard deviation is `NA` if there is only one year of data.)
+
+## By Station
+
+::: panel-tabset
+
+### Boxplot
+```{r}
+dat_sd <- dat_summary %>% 
+  filter(!is.na(wk_sd_temperature_degree_c))
+
+p <- ggplot(dat_sd, aes(station, wk_sd_temperature_degree_c, fill = station)) + 
+  geom_boxplot(outliers = TRUE) +
+  theme(legend.position = "none")
+
+ggplotly(p)
+```
+
+### Distribution
+```{r}
+
+p <- ggplot(dat_sd, aes(wk_sd_temperature_degree_c, fill = station)) +
+   geom_histogram(binwidth = 0.2, color = "grey80", linewidth = 0.25)
+
+ggplotly(p)
+
+```
+
+### Table
+
+```{r}
+dat_sd %>% 
+  summarise(
+    min_sd = round(min(wk_sd_temperature_degree_c), digits = 3),
+    med_sd = round(median(wk_sd_temperature_degree_c), digits = 3),
+    mean_sd = round(mean(wk_sd_temperature_degree_c), digits = 3),
+    max_sd = round(max(wk_sd_temperature_degree_c), digits = 3),
+    .by = station
+  ) %>% 
+  datatable(
+    rownames = FALSE, 
+    options = list(
+      dom = 'Bft',
+      paging = FALSE,
+      searching = TRUE,
+      pageLength = 500,
+      scrollY = "500px",
+      scrollX = "500px",
+      columnDefs = list(list(className = 'dt-center', targets = "_all")),
+      buttons = 'copy'
+    ))
+
+```
+
+:::
+
+
+## Time Series
+
+::: {.panel-tabset}
+```{r}
+#| results: asis
+#| warning: false
+
+for(i in seq_along(stations)) {
+  
+  station_i <- stations[i]
+  
+  dat_i <- dat_summary %>% 
+    filter(station == station_i) %>% 
+    mutate(sensor_height_above_seafloor_m = convert_to_ordered_factor(sensor_height_above_seafloor_m))
+  
+  if(sum(is.na(dat_i$wk_sd_temperature_degree_c)) != nrow(dat_i)) {
+    cat('\n###', station_i, '\n')
+    
+    pal <- viridis(
+      length(unique(dat_i$sensor_height_above_seafloor_m)), option = "D", direction = -1
+    )
+    
+    p <- ggplot(
+      dat_i, aes(iso_week, 
+                 wk_sd_temperature_degree_c, color = sensor_height_above_seafloor_m)) +
+      geom_point() +
+      scale_colour_manual("sensor height (m)", values = pal) +
+      scale_y_continuous("temperature_degree_c", limits = c(0, 2)) 
+    
+    print(htmltools::tagList(ggplotly(p)))
+  }
+}
+
+```
+:::
+
+
+## Boxplots by Sensor Height
+
+- Only shows stations with more than one year of data for at least one week. (The standard deviation is `NA` if there is only one year of data.)
+
+::: {.panel-tabset}
+```{r}
+#| results: asis
+#| warning: false
+
+for(i in seq_along(stations)) {
+
+  station_i <- stations[i]
+
+   dat_i <- dat_summary %>% 
+    filter(station == station_i) %>% 
+    mutate(
+      sensor_height_above_seafloor_m =  convert_to_ordered_factor(sensor_height_above_seafloor_m)
+    )
+  
+   if(sum(is.na(dat_i$wk_sd_temperature_degree_c)) != nrow(dat_i)) {
+     cat('\n###', station_i, '\n')
+     
+     pal <- viridis(
+       length(unique(dat_i$sensor_height_above_seafloor_m)), option = "D", direction = -1
+     )
+     
+     p <- ggplot(
+       dat_i, aes(
+         sensor_height_above_seafloor_m, wk_sd_temperature_degree_c, 
+         fill = sensor_height_above_seafloor_m)
+     ) +
+       geom_boxplot(outliers = TRUE) +
+       scale_fill_manual("sensor height (m)", values = pal) +
+       scale_y_continuous(limits = c(0, 2)) +
+       theme(legend.position = "none")
+     
+     print(htmltools::tagList(ggplotly(p)))
+   }
+}
+
+```
+:::
+
+# Map
+
+- Centreville, Long Beach, Long Island 2, and Sandy Cove are the only stations with at least one **full** year of data. 
+
+
+```{r}
+
+st_dat <- dat %>%
+  distinct(station, station_elevation_m, latitude, longitude) %>% 
+  left_join(
+    dat_summary %>% 
+      summarise(min_n_years =  min(n), max_n_years = max(n), .by = station),
+    by = "station"
+  ) %>% 
+  mutate(
+    popup = paste(
+      "station: ", station, "</br>",
+      "elevation: ", station_elevation_m, "</br>",
+      "min_n_years: ", min_n_years, "</br>",
+      "max_n_years: ", max_n_years)
+  )
+
+
+st_pal <- colorFactor(
+  palette = brewer.pal(length(unique(st_dat$max_n_years)), "Dark2"),
+  domain = unique(st_dat$max_n_years)
+)
+st_map <- split(st_dat, st_dat$max_n_years)
+
+
+leaflet() %>%
+  addProviderTiles("Esri.WorldTopoMap") %>% 
+  add_map_layers(
+    map_dat = st_map,
+    popup = ~popup,
+    size = 5,
+    map_pal = ~st_pal(max_n_years)
+  ) %>% 
+  addScaleBar(
+    position = "topright",
+    options = scaleBarOptions(imperial = FALSE)
+  ) %>%
+  addLayersControl(
+    overlayGroups = unique(st_dat$max_n_years),
+    options = layersControlOptions(collapsed = FALSE),
+    position = "bottomright"
+  ) %>%
+   addLegend(
+      "bottomright",
+      pal = st_pal,
+      values = unique(st_dat$max_n_years),
+      title = "Max # Years",
+      opacity = 0.75,
+      position = "bottomright"
+    ) %>%
+  htmlwidgets::onRender(
+    "function() {$('.leaflet-control-layers-overlays').
+    prepend('<label style=\"text-align:center\">Max # Years</label>');}"
+  )
+```
+
+
+
